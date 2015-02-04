@@ -3,7 +3,7 @@ var fs = require('fs');
 var path = require('path');
 //
 var input = path.join(__dirname + "/img");
-var output = path.join(__dirname + "/small");
+var output = path.join(__dirname + "/large");
 
 // leave first element in array as dot to move all
 // var makers = ["."];
@@ -15,9 +15,14 @@ var filter2 = "150";
 
 // leave as empty string if not set
 // var prefix = "";
-var prefix = "small-";
+var prefix = "large-";
 
-function moveFilesFilter(inputFolder, outputFolder, filter, filter2, prefix) {
+// reverseFilter if you wanna reverse your filter so it not contains fx 150
+// Set to true to activate // var reverseFilter = true;
+var reverseFilter = false;
+
+function filterAndMove(inputFolder, outputFolder, filter, filter2, prefix, reverseFilter) {
+	
 	var filterArr = [];
 	for (var i = 0; i < filter.length; i++) {
 	    filterArr.push(filter[i].toLowerCase());
@@ -38,27 +43,40 @@ function moveFilesFilter(inputFolder, outputFolder, filter, filter2, prefix) {
 	    }
 	    return files_;
 	}
+	function writeFile() {
+		var readFile = fs.createReadStream(source);
+		var fileName = source.split(/[\s\/]+/);
+		if(prefix.length > 0) {
+			var file = outputFolder + "/" + prefix + fileName[fileName.length-1];
+		} else {
+			var file = outputFolder + "/" + fileName[fileName.length-1];
+		}
+		var writeFile = fs.createWriteStream(file);
+		readFile.pipe(writeFile);
+	}
+	
 	var sourceArray = getFiles(inputFolder);
 
 	for (var i = 0; i < sourceArray.length; i++) {
 		var source = sourceArray[i];
+		var sourceEqual = source.indexOf(filter2) > -1;
+		var sourceNotEqual = source.indexOf(filter2) == -1;
+
 		for (var j = 0; j < filterArr.length; j++) {
 			var filter = filterArr[j];
 			if (source.indexOf(filter) > -1) {
-				if(source.indexOf(filter2) > -1) {
-					var readFile = fs.createReadStream(source);
-					var fileName = source.split(/[\s\/]+/);
-					if(prefix.length > 0) {
-						var file = outputFolder + "/" + prefix + fileName[fileName.length-1];
-					} else {
-						var file = outputFolder + "/" + fileName[fileName.length-1];
+				if(reverseFilter) {
+					if(sourceNotEqual) {
+						writeFile();
 					}
-					var writeFile = fs.createWriteStream(file);
-					readFile.pipe(writeFile);
+				} else {
+					if(sourceEqual) {
+						writeFile();
+					}
 				}
 			}
 		};
 	};
-};
+}
 
-moveFilesFilter(input, output, filter, filter2, prefix);
+filterAndMove(input, output, filter, filter2, prefix, reverseFilter);
